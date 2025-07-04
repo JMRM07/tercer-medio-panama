@@ -1,66 +1,65 @@
-// Ejemplo de función serverless para Vercel - Gestión de Clientes
-import mysql from 'mysql2/promise';
+// Función serverless para Vercel - Gestión de Clientes con Supabase
+import { createClient } from '@supabase/supabase-js';
 
-// Configuración de base de datos
-async function connectDB() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT
-    });
-    return connection;
-}
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Función principal exportada para Vercel
 export default async function handler(req, res) {
     // Configurar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Manejar preflight requests
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
     try {
-        const db = await connectDB();
-
         switch (req.method) {
             case 'GET':
-                // Obtener todos los clientes
+                // Obtener todos los clientes o uno específico
                 if (!req.query.id) {
-                    const [clientes] = await db.execute('SELECT * FROM clientes WHERE activo = 1 ORDER BY nombre');
-                    await db.end();
+                    const { data: clientes, error } = await supabase
+                        .from('clientes')
+                        .select('*')
+                        .eq('activo', true)
+                        .order('nombre');
+                    
+                    if (error) throw error;
                     return res.json(clientes);
                 }
                 
                 // Obtener cliente específico
-                const [cliente] = await db.execute('SELECT * FROM clientes WHERE id = ? AND activo = 1', [req.query.id]);
-                await db.end();
-                return res.json(cliente[0] || null);
+                const { data: cliente, error: clienteError } = await supabase
+                    .from('clientes')
+                    .select('*')
+                    .eq('id', req.query.id)
+                    .eq('activo', true)
+                    .single();
+                
+                if (clienteError && clienteError.code !== 'PGRST116') throw clienteError;
+                return res.json(cliente || null);
 
             case 'POST':
                 // Crear nuevo cliente
                 const { codigo, nombre, ruc, dv, email, telefono } = req.body;
                 
-                // Validar datos requeridos
                 if (!codigo || !nombre || !ruc || !dv || !email) {
-                    await db.end();
                     return res.status(400).json({ error: 'Datos incompletos' });
                 }
 
-                const [result] = await db.execute(
-                    'INSERT INTO clientes (codigo, nombre, ruc, dv, email, telefono) VALUES (?, ?, ?, ?, ?, ?)',
-                    [codigo, nombre, ruc, dv, email, telefono]
-                );
+                const { data: newClient, error: insertError } = await supabase
+                    .from('clientes')
+                    .insert([{ codigo, nombre, ruc, dv, email, telefono }])
+                    .select();
                 
-                await db.end();
+                if (insertError) throw insertError;
+                
                 return res.json({ 
                     success: true, 
-                    id: result.insertId,
+                    id: newClient[0].id,
                     message: 'Cliente creado exitosamente' 
                 });
 
@@ -70,16 +69,21 @@ export default async function handler(req, res) {
                 const updateData = req.body;
                 
                 if (!clienteId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de cliente requerido' });
                 }
 
-                await db.execute(
-                    'UPDATE clientes SET nombre = ?, ruc = ?, dv = ?, email = ?, telefono = ? WHERE id = ?',
-                    [updateData.nombre, updateData.ruc, updateData.dv, updateData.email, updateData.telefono, clienteId]
-                );
+                const { error: updateError } = await supabase
+                    .from('clientes')
+                    .update({
+                        nombre: updateData.nombre,
+                        ruc: updateData.ruc,
+                        dv: updateData.dv,
+                        email: updateData.email,
+                        telefono: updateData.telefono
+                    })
+                    .eq('id', clienteId);
                 
-                await db.end();
+                if (updateError) throw updateError;
                 return res.json({ success: true, message: 'Cliente actualizado' });
 
             case 'DELETE':
@@ -87,16 +91,18 @@ export default async function handler(req, res) {
                 const deleteId = req.query.id;
                 
                 if (!deleteId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de cliente requerido' });
                 }
 
-                await db.execute('UPDATE clientes SET activo = 0 WHERE id = ?', [deleteId]);
-                await db.end();
+                const { error: deleteError } = await supabase
+                    .from('clientes')
+                    .update({ activo: false })
+                    .eq('id', deleteId);
+                
+                if (deleteError) throw deleteError;
                 return res.json({ success: true, message: 'Cliente eliminado' });
 
             default:
-                await db.end();
                 return res.status(405).json({ error: 'Método no permitido' });
         }
 

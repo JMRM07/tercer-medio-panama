@@ -1,16 +1,10 @@
-// Función serverless para Vercel - Reportes
-import mysql from 'mysql2/promise';
+// Función serverless para Vercel - Reportes con Supabase
+import { createClient } from '@supabase/supabase-js';
 
-async function connectDB() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT
-    });
-    return connection;
-}
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     // Configurar CORS
@@ -27,174 +21,285 @@ export default async function handler(req, res) {
     }
 
     try {
-        const db = await connectDB();
         const tipoReporte = req.query.tipo || req.body?.tipo;
 
         switch (tipoReporte) {
             case 'dashboard':
                 // Reporte de dashboard - resumen general
-                const [totalClientes] = await db.execute('SELECT COUNT(*) as total FROM clientes WHERE activo = 1');
-                const [totalCotizaciones] = await db.execute('SELECT COUNT(*) as total FROM cotizaciones');
-                const [totalContratos] = await db.execute('SELECT COUNT(*) as total FROM contratos');
-                const [totalFacturas] = await db.execute('SELECT COUNT(*) as total FROM facturas');
+                const { count: totalClientes } = await supabase
+                    .from('clientes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('activo', true);
+
+                const { count: totalCotizaciones } = await supabase
+                    .from('cotizaciones')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('activo', true);
+
+                const { count: totalContratos } = await supabase
+                    .from('contratos')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('activo', true);
+
+                const { count: totalFacturas } = await supabase
+                    .from('facturas')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('activo', true);
+
+                // Ventas del mes actual
+                const fechaInicio = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+                const fechaFin = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString();
                 
-                const [ventasActuales] = await db.execute(`
-                    SELECT SUM(total) as ventas_totales, COUNT(*) as facturas_mes
-                    FROM facturas 
-                    WHERE MONTH(fecha_factura) = MONTH(CURRENT_DATE()) 
-                    AND YEAR(fecha_factura) = YEAR(CURRENT_DATE())
-                `);
+                const { data: ventasActuales } = await supabase
+                    .from('facturas')
+                    .select('total')
+                    .eq('activo', true)
+                    .gte('fecha_factura', fechaInicio)
+                    .lte('fecha_factura', fechaFin);
 
-                const [estadoCotizaciones] = await db.execute(`
-                    SELECT estado, COUNT(*) as cantidad, SUM(total) as monto_total
-                    FROM cotizaciones 
-                    GROUP BY estado
-                `);
+                const ventasTotal = ventasActuales?.reduce((sum, factura) => sum + (factura.total || 0), 0) || 0;
 
-                await db.end();
+                // Estado de cotizaciones
+                const { data: cotizacionesEstado } = await supabase
+                    .from('cotizaciones')
+                    .select('estado, total')
+                    .eq('activo', true);
+
+                const estadoCotizaciones = cotizacionesEstado?.reduce((acc, cot) => {
+                    const estado = cot.estado || 'Sin estado';
+                    if (!acc[estado]) {
+                        acc[estado] = { cantidad: 0, monto_total: 0 };
+                    }
+                    acc[estado].cantidad += 1;
+                    acc[estado].monto_total += cot.total || 0;
+                    return acc;
+                }, {});
+
                 return res.json({
                     resumen: {
-                        clientes: totalClientes[0].total,
-                        cotizaciones: totalCotizaciones[0].total,
-                        contratos: totalContratos[0].total,
-                        facturas: totalFacturas[0].total
+                        clientes: totalClientes || 0,
+                        cotizaciones: totalCotizaciones || 0,
+                        contratos: totalContratos || 0,
+                        facturas: totalFacturas || 0
                     },
                     ventas: {
-                        mes_actual: ventasActuales[0].ventas_totales || 0,
-                        facturas_mes: ventasActuales[0].facturas_mes || 0
+                        mes_actual: ventasTotal,
+                        facturas_mes: ventasActuales?.length || 0
                     },
-                    cotizaciones_por_estado: estadoCotizaciones
+                    cotizaciones_por_estado: estadoCotizaciones || {}
                 });
 
             case 'ventas':
                 // Reporte de ventas por período
                 const { fecha_inicio, fecha_fin } = req.query;
-                
-                const [ventasPeriodo] = await db.execute(`
-                    SELECT 
-                        DATE(fecha_factura) as fecha,
-                        COUNT(*) as cantidad_facturas,
-                        SUM(subtotal) as subtotal,
-                        SUM(itbms) as itbms,
-                        SUM(total) as total
-                    FROM facturas 
-                    WHERE fecha_factura BETWEEN ? AND ?
-                    GROUP BY DATE(fecha_factura)
-                    ORDER BY fecha_factura DESC
-                `, [fecha_inicio || '2024-01-01', fecha_fin || '2024-12-31']);
+                const startDate = fecha_inicio || '2024-01-01';
+                const endDate = fecha_fin || '2024-12-31';
 
-                const [ventasPorCliente] = await db.execute(`
-                    SELECT 
-                        cliente_nombre,
-                        COUNT(*) as cantidad_facturas,
-                        SUM(total) as total_ventas
-                    FROM facturas 
-                    WHERE fecha_factura BETWEEN ? AND ?
-                    GROUP BY cliente_id, cliente_nombre
-                    ORDER BY total_ventas DESC
-                `, [fecha_inicio || '2024-01-01', fecha_fin || '2024-12-31']);
+                const { data: ventasPeriodo } = await supabase
+                    .from('facturas')
+                    .select(`
+                        fecha_factura,
+                        subtotal,
+                        itbms,
+                        total,
+                        clientes (
+                            nombre
+                        )
+                    `)
+                    .eq('activo', true)
+                    .gte('fecha_factura', startDate)
+                    .lte('fecha_factura', endDate)
+                    .order('fecha_factura', { ascending: false });
 
-                await db.end();
+                // Agrupar por fecha
+                const ventasPorFecha = ventasPeriodo?.reduce((acc, factura) => {
+                    const fecha = factura.fecha_factura?.split('T')[0];
+                    if (!acc[fecha]) {
+                        acc[fecha] = {
+                            fecha,
+                            cantidad_facturas: 0,
+                            subtotal: 0,
+                            itbms: 0,
+                            total: 0
+                        };
+                    }
+                    acc[fecha].cantidad_facturas += 1;
+                    acc[fecha].subtotal += factura.subtotal || 0;
+                    acc[fecha].itbms += factura.itbms || 0;
+                    acc[fecha].total += factura.total || 0;
+                    return acc;
+                }, {});
+
+                // Agrupar por cliente
+                const ventasPorCliente = ventasPeriodo?.reduce((acc, factura) => {
+                    const clienteNombre = factura.clientes?.nombre || 'Sin cliente';
+                    if (!acc[clienteNombre]) {
+                        acc[clienteNombre] = {
+                            cliente_nombre: clienteNombre,
+                            cantidad_facturas: 0,
+                            total_ventas: 0
+                        };
+                    }
+                    acc[clienteNombre].cantidad_facturas += 1;
+                    acc[clienteNombre].total_ventas += factura.total || 0;
+                    return acc;
+                }, {});
+
                 return res.json({
-                    ventas_por_fecha: ventasPeriodo,
-                    ventas_por_cliente: ventasPorCliente
+                    ventas_por_fecha: Object.values(ventasPorFecha || {}),
+                    ventas_por_cliente: Object.values(ventasPorCliente || {})
                 });
 
             case 'clientes':
                 // Reporte de actividad de clientes
-                const [clientesActivos] = await db.execute(`
-                    SELECT 
-                        c.nombre,
-                        c.ruc,
-                        COUNT(DISTINCT cot.id) as cotizaciones,
-                        COUNT(DISTINCT con.id) as contratos,
-                        COUNT(DISTINCT f.id) as facturas,
-                        COALESCE(SUM(f.total), 0) as total_facturado,
-                        MAX(f.fecha_factura) as ultima_factura
-                    FROM clientes c
-                    LEFT JOIN cotizaciones cot ON c.id = cot.cliente_id
-                    LEFT JOIN contratos con ON c.id = con.cliente_id
-                    LEFT JOIN facturas f ON c.id = f.cliente_id
-                    WHERE c.activo = 1
-                    GROUP BY c.id, c.nombre, c.ruc
-                    ORDER BY total_facturado DESC
-                `);
+                const { data: clientesData } = await supabase
+                    .from('clientes')
+                    .select(`
+                        *,
+                        cotizaciones (
+                            id,
+                            total
+                        ),
+                        contratos (
+                            id,
+                            total
+                        ),
+                        facturas (
+                            id,
+                            total,
+                            fecha_factura
+                        )
+                    `)
+                    .eq('activo', true);
 
-                await db.end();
+                const clientesActivos = clientesData?.map(cliente => ({
+                    nombre: cliente.nombre,
+                    ruc: cliente.ruc,
+                    cotizaciones: cliente.cotizaciones?.length || 0,
+                    contratos: cliente.contratos?.length || 0,
+                    facturas: cliente.facturas?.length || 0,
+                    total_facturado: cliente.facturas?.reduce((sum, f) => sum + (f.total || 0), 0) || 0,
+                    ultima_factura: cliente.facturas?.length > 0 ? 
+                        Math.max(...cliente.facturas.map(f => new Date(f.fecha_factura).getTime())) : null
+                })) || [];
+
                 return res.json({ clientes: clientesActivos });
 
             case 'contratos':
                 // Reporte de estado de contratos
-                const [estadoContratos] = await db.execute(`
-                    SELECT 
-                        numero_contrato,
-                        cliente_nombre,
-                        fecha_inicio,
-                        fecha_finalizacion,
-                        horas_contratadas,
-                        horas_reportadas,
-                        horas_facturadas,
-                        (horas_contratadas - horas_reportadas) as horas_pendientes,
-                        estado,
-                        total
-                    FROM contratos 
-                    ORDER BY fecha_inicio DESC
-                `);
+                const { data: estadoContratos } = await supabase
+                    .from('contratos')
+                    .select(`
+                        *,
+                        clientes (
+                            nombre
+                        )
+                    `)
+                    .eq('activo', true)
+                    .order('fecha_inicio', { ascending: false });
 
-                const [resumenContratos] = await db.execute(`
-                    SELECT 
-                        estado,
-                        COUNT(*) as cantidad,
-                        SUM(total) as monto_total,
-                        SUM(horas_contratadas) as horas_totales,
-                        SUM(horas_reportadas) as horas_reportadas
-                    FROM contratos 
-                    GROUP BY estado
-                `);
+                const contratos = estadoContratos?.map(contrato => ({
+                    numero: contrato.numero,
+                    cliente_nombre: contrato.clientes?.nombre,
+                    fecha_inicio: contrato.fecha_inicio,
+                    fecha_fin: contrato.fecha_fin,
+                    tipo_contrato: contrato.tipo_contrato,
+                    estado: contrato.estado,
+                    total: contrato.total
+                })) || [];
 
-                await db.end();
+                // Resumen de contratos
+                const resumenContratos = estadoContratos?.reduce((acc, contrato) => {
+                    const estado = contrato.estado || 'Sin estado';
+                    if (!acc[estado]) {
+                        acc[estado] = {
+                            cantidad: 0,
+                            monto_total: 0
+                        };
+                    }
+                    acc[estado].cantidad += 1;
+                    acc[estado].monto_total += contrato.total || 0;
+                    return acc;
+                }, {});
+
                 return res.json({
-                    contratos: estadoContratos,
-                    resumen: resumenContratos
+                    contratos: contratos,
+                    resumen: Object.entries(resumenContratos || {}).map(([estado, datos]) => ({
+                        estado,
+                        ...datos
+                    }))
                 });
 
             case 'financiero':
                 // Reporte financiero detallado
-                const [ventasMensuales] = await db.execute(`
-                    SELECT 
-                        YEAR(fecha_factura) as año,
-                        MONTH(fecha_factura) as mes,
-                        MONTHNAME(fecha_factura) as nombre_mes,
-                        COUNT(*) as cantidad_facturas,
-                        SUM(subtotal) as subtotal,
-                        SUM(itbms) as itbms,
-                        SUM(total) as total
-                    FROM facturas 
-                    GROUP BY YEAR(fecha_factura), MONTH(fecha_factura)
-                    ORDER BY año DESC, mes DESC
-                    LIMIT 12
-                `);
+                const { data: todasFacturas } = await supabase
+                    .from('facturas')
+                    .select(`
+                        fecha_factura,
+                        subtotal,
+                        itbms,
+                        total,
+                        clientes (
+                            nombre
+                        )
+                    `)
+                    .eq('activo', true)
+                    .order('fecha_factura', { ascending: false });
 
-                const [topClientes] = await db.execute(`
-                    SELECT 
-                        cliente_nombre,
-                        COUNT(*) as facturas,
-                        SUM(total) as total_ventas,
-                        AVG(total) as promedio_factura
-                    FROM facturas 
-                    GROUP BY cliente_id, cliente_nombre
-                    ORDER BY total_ventas DESC
-                    LIMIT 10
-                `);
+                // Ventas mensuales
+                const ventasMensuales = todasFacturas?.reduce((acc, factura) => {
+                    const fecha = new Date(factura.fecha_factura);
+                    const año = fecha.getFullYear();
+                    const mes = fecha.getMonth() + 1;
+                    const clave = `${año}-${mes.toString().padStart(2, '0')}`;
+                    
+                    if (!acc[clave]) {
+                        acc[clave] = {
+                            año,
+                            mes,
+                            nombre_mes: fecha.toLocaleDateString('es-ES', { month: 'long' }),
+                            cantidad_facturas: 0,
+                            subtotal: 0,
+                            itbms: 0,
+                            total: 0
+                        };
+                    }
+                    acc[clave].cantidad_facturas += 1;
+                    acc[clave].subtotal += factura.subtotal || 0;
+                    acc[clave].itbms += factura.itbms || 0;
+                    acc[clave].total += factura.total || 0;
+                    return acc;
+                }, {});
 
-                await db.end();
+                // Top clientes
+                const topClientes = todasFacturas?.reduce((acc, factura) => {
+                    const cliente = factura.clientes?.nombre || 'Sin cliente';
+                    if (!acc[cliente]) {
+                        acc[cliente] = {
+                            cliente_nombre: cliente,
+                            facturas: 0,
+                            total_ventas: 0
+                        };
+                    }
+                    acc[cliente].facturas += 1;
+                    acc[cliente].total_ventas += factura.total || 0;
+                    return acc;
+                }, {});
+
+                const topClientesArray = Object.values(topClientes || {})
+                    .map(cliente => ({
+                        ...cliente,
+                        promedio_factura: cliente.total_ventas / cliente.facturas
+                    }))
+                    .sort((a, b) => b.total_ventas - a.total_ventas)
+                    .slice(0, 10);
+
                 return res.json({
-                    ventas_mensuales: ventasMensuales,
-                    top_clientes: topClientes
+                    ventas_mensuales: Object.values(ventasMensuales || {}).slice(0, 12),
+                    top_clientes: topClientesArray
                 });
 
             default:
-                await db.end();
                 return res.status(400).json({ error: 'Tipo de reporte no válido' });
         }
 

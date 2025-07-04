@@ -1,16 +1,10 @@
-// Función serverless para Vercel - Gestión de Cotizaciones
-import mysql from 'mysql2/promise';
+// Función serverless para Vercel - Gestión de Cotizaciones con Supabase
+import { createClient } from '@supabase/supabase-js';
 
-async function connectDB() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT
-    });
-    return connection;
-}
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     // Configurar CORS
@@ -23,72 +17,90 @@ export default async function handler(req, res) {
     }
 
     try {
-        const db = await connectDB();
-
         switch (req.method) {
             case 'GET':
+                // Obtener todas las cotizaciones o una específica
                 if (!req.query.id) {
-                    // Obtener todas las cotizaciones con información del cliente
-                    const [cotizaciones] = await db.execute(`
-                        SELECT c.*, cl.nombre as cliente_nombre, cl.ruc as cliente_ruc
-                        FROM cotizaciones c 
-                        LEFT JOIN clientes cl ON c.cliente_id = cl.id 
-                        ORDER BY c.fecha_creacion DESC
-                    `);
-                    await db.end();
+                    const { data: cotizaciones, error } = await supabase
+                        .from('cotizaciones')
+                        .select(`
+                            *,
+                            clientes (
+                                id,
+                                nombre,
+                                codigo
+                            )
+                        `)
+                        .eq('activo', true)
+                        .order('fecha', { ascending: false });
+                    
+                    if (error) throw error;
                     return res.json(cotizaciones);
                 }
                 
                 // Obtener cotización específica
-                const [cotizacion] = await db.execute(`
-                    SELECT c.*, cl.nombre as cliente_nombre, cl.ruc as cliente_ruc
-                    FROM cotizaciones c 
-                    LEFT JOIN clientes cl ON c.cliente_id = cl.id 
-                    WHERE c.id = ?
-                `, [req.query.id]);
+                const { data: cotizacion, error: cotizacionError } = await supabase
+                    .from('cotizaciones')
+                    .select(`
+                        *,
+                        clientes (
+                            id,
+                            nombre,
+                            codigo,
+                            ruc,
+                            dv
+                        )
+                    `)
+                    .eq('id', req.query.id)
+                    .eq('activo', true)
+                    .single();
                 
-                await db.end();
-                return res.json(cotizacion[0] || null);
+                if (cotizacionError && cotizacionError.code !== 'PGRST116') throw cotizacionError;
+                return res.json(cotizacion || null);
 
             case 'POST':
                 // Crear nueva cotización
-                const {
-                    codigo, numero_documento, cliente_id, numero_leads,
-                    precio_unitario, descuento, descripcion, estado
+                const { 
+                    numero, 
+                    cliente_id, 
+                    descripcion, 
+                    cantidad, 
+                    precio_unitario, 
+                    observaciones 
                 } = req.body;
                 
-                if (!codigo || !cliente_id || !numero_leads || !precio_unitario) {
-                    await db.end();
+                if (!numero || !cliente_id || !descripcion || !cantidad || !precio_unitario) {
                     return res.status(400).json({ error: 'Datos incompletos' });
                 }
 
-                // Calcular totales
-                const subtotal = numero_leads * precio_unitario;
-                const descuento_monto = subtotal * (descuento / 100 || 0);
-                const subtotal_descuento = subtotal - descuento_monto;
-                const itbms = subtotal_descuento * 0.07; // 7% ITBMS
-                const total = subtotal_descuento + itbms;
+                // Calcular valores
+                const subtotal = parseFloat(cantidad) * parseFloat(precio_unitario);
+                const itbms = subtotal * 0.07; // 7% ITBMS
+                const total = subtotal + itbms;
 
-                // Obtener datos del cliente
-                const [cliente] = await db.execute('SELECT nombre, ruc FROM clientes WHERE id = ?', [cliente_id]);
+                const { data: newCotizacion, error: insertError } = await supabase
+                    .from('cotizaciones')
+                    .insert([{
+                        numero,
+                        cliente_id,
+                        descripcion,
+                        cantidad,
+                        precio_unitario,
+                        subtotal,
+                        itbms,
+                        total,
+                        observaciones,
+                        fecha: new Date().toISOString(),
+                        estado: 'Pendiente'
+                    }])
+                    .select();
                 
-                const [result] = await db.execute(`
-                    INSERT INTO cotizaciones (
-                        codigo, numero_documento, cliente_id, cliente_nombre, cliente_ruc,
-                        numero_leads, precio_unitario, descuento, subtotal, 
-                        descuento_monto, itbms, total, descripcion, estado
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                    codigo, numero_documento, cliente_id, cliente[0].nombre, cliente[0].ruc,
-                    numero_leads, precio_unitario, descuento, subtotal,
-                    descuento_monto, itbms, total, descripcion, estado || 'borrador'
-                ]);
+                if (insertError) throw insertError;
                 
-                await db.end();
                 return res.json({ 
                     success: true, 
-                    id: result.insertId,
-                    totales: { subtotal, descuento_monto, itbms, total }
+                    id: newCotizacion[0].id,
+                    message: 'Cotización creada exitosamente' 
                 });
 
             case 'PUT':
@@ -97,54 +109,52 @@ export default async function handler(req, res) {
                 const updateData = req.body;
                 
                 if (!cotizacionId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de cotización requerido' });
                 }
 
-                // Recalcular totales si es necesario
-                if (updateData.numero_leads || updateData.precio_unitario || updateData.descuento) {
-                    const subtotal = updateData.numero_leads * updateData.precio_unitario;
-                    const descuento_monto = subtotal * (updateData.descuento / 100 || 0);
-                    const subtotal_descuento = subtotal - descuento_monto;
-                    const itbms = subtotal_descuento * 0.07;
-                    const total = subtotal_descuento + itbms;
+                // Recalcular valores si se actualizan cantidad o precio
+                let updateFields = { ...updateData };
+                
+                if (updateData.cantidad || updateData.precio_unitario) {
+                    const cantidad = parseFloat(updateData.cantidad) || 0;
+                    const precio = parseFloat(updateData.precio_unitario) || 0;
+                    const subtotal = cantidad * precio;
+                    const itbms = subtotal * 0.07;
+                    const total = subtotal + itbms;
                     
-                    updateData.subtotal = subtotal;
-                    updateData.descuento_monto = descuento_monto;
-                    updateData.itbms = itbms;
-                    updateData.total = total;
+                    updateFields = {
+                        ...updateFields,
+                        subtotal,
+                        itbms,
+                        total
+                    };
                 }
 
-                await db.execute(`
-                    UPDATE cotizaciones SET 
-                    numero_documento = ?, numero_leads = ?, precio_unitario = ?,
-                    descuento = ?, subtotal = ?, descuento_monto = ?, 
-                    itbms = ?, total = ?, descripcion = ?, estado = ?
-                    WHERE id = ?
-                `, [
-                    updateData.numero_documento, updateData.numero_leads, updateData.precio_unitario,
-                    updateData.descuento, updateData.subtotal, updateData.descuento_monto,
-                    updateData.itbms, updateData.total, updateData.descripcion, updateData.estado,
-                    cotizacionId
-                ]);
+                const { error: updateError } = await supabase
+                    .from('cotizaciones')
+                    .update(updateFields)
+                    .eq('id', cotizacionId);
                 
-                await db.end();
+                if (updateError) throw updateError;
                 return res.json({ success: true, message: 'Cotización actualizada' });
 
             case 'DELETE':
+                // Eliminar cotización (soft delete)
                 const deleteId = req.query.id;
                 
                 if (!deleteId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de cotización requerido' });
                 }
 
-                await db.execute('UPDATE cotizaciones SET estado = ? WHERE id = ?', ['anulada', deleteId]);
-                await db.end();
-                return res.json({ success: true, message: 'Cotización anulada' });
+                const { error: deleteError } = await supabase
+                    .from('cotizaciones')
+                    .update({ activo: false })
+                    .eq('id', deleteId);
+                
+                if (deleteError) throw deleteError;
+                return res.json({ success: true, message: 'Cotización eliminada' });
 
             default:
-                await db.end();
                 return res.status(405).json({ error: 'Método no permitido' });
         }
 

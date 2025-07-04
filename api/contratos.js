@@ -1,16 +1,10 @@
-// Función serverless para Vercel - Gestión de Contratos
-import mysql from 'mysql2/promise';
+// Función serverless para Vercel - Gestión de Contratos con Supabase
+import { createClient } from '@supabase/supabase-js';
 
-async function connectDB() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT
-    });
-    return connection;
-}
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     // Configurar CORS
@@ -23,78 +17,98 @@ export default async function handler(req, res) {
     }
 
     try {
-        const db = await connectDB();
-
         switch (req.method) {
             case 'GET':
+                // Obtener todos los contratos o uno específico
                 if (!req.query.id) {
-                    // Obtener todos los contratos
-                    const [contratos] = await db.execute(`
-                        SELECT c.*, cl.nombre as cliente_nombre, cl.ruc as cliente_ruc
-                        FROM contratos c 
-                        LEFT JOIN clientes cl ON c.cliente_id = cl.id 
-                        ORDER BY c.fecha_registro DESC
-                    `);
-                    await db.end();
+                    const { data: contratos, error } = await supabase
+                        .from('contratos')
+                        .select(`
+                            *,
+                            clientes (
+                                id,
+                                nombre,
+                                codigo,
+                                ruc,
+                                dv
+                            )
+                        `)
+                        .eq('activo', true)
+                        .order('fecha_inicio', { ascending: false });
+                    
+                    if (error) throw error;
                     return res.json(contratos);
                 }
                 
                 // Obtener contrato específico
-                const [contrato] = await db.execute(`
-                    SELECT c.*, cl.nombre as cliente_nombre, cl.ruc as cliente_ruc
-                    FROM contratos c 
-                    LEFT JOIN clientes cl ON c.cliente_id = cl.id 
-                    WHERE c.id = ?
-                `, [req.query.id]);
+                const { data: contrato, error: contratoError } = await supabase
+                    .from('contratos')
+                    .select(`
+                        *,
+                        clientes (
+                            id,
+                            nombre,
+                            codigo,
+                            ruc,
+                            dv,
+                            email,
+                            telefono
+                        )
+                    `)
+                    .eq('id', req.query.id)
+                    .eq('activo', true)
+                    .single();
                 
-                await db.end();
-                return res.json(contrato[0] || null);
+                if (contratoError && contratoError.code !== 'PGRST116') throw contratoError;
+                return res.json(contrato || null);
 
             case 'POST':
                 // Crear nuevo contrato
-                const {
-                    numero_contrato, cliente_id, fecha_creacion, fecha_inicio,
-                    fecha_finalizacion, referencia, tarifa, horas_contratadas,
-                    horas_facturadas, estado
+                const { 
+                    numero, 
+                    cliente_id, 
+                    descripcion, 
+                    monto, 
+                    fecha_inicio, 
+                    fecha_fin, 
+                    tipo_contrato, 
+                    observaciones 
                 } = req.body;
                 
-                if (!numero_contrato || !cliente_id || !fecha_inicio || !tarifa || !horas_contratadas) {
-                    await db.end();
+                if (!numero || !cliente_id || !descripcion || !monto || !fecha_inicio) {
                     return res.status(400).json({ error: 'Datos incompletos' });
                 }
 
-                // Calcular totales
-                const subtotal = horas_facturadas * tarifa;
+                // Calcular valores
+                const subtotal = parseFloat(monto);
                 const itbms = subtotal * 0.07; // 7% ITBMS
                 const total = subtotal + itbms;
 
-                // Obtener datos del cliente
-                const [cliente] = await db.execute('SELECT nombre, ruc FROM clientes WHERE id = ?', [cliente_id]);
+                const { data: newContrato, error: insertError } = await supabase
+                    .from('contratos')
+                    .insert([{
+                        numero,
+                        cliente_id,
+                        descripcion,
+                        monto,
+                        subtotal,
+                        itbms,
+                        total,
+                        fecha_inicio,
+                        fecha_fin,
+                        tipo_contrato: tipo_contrato || 'Servicios',
+                        observaciones,
+                        estado: 'Activo',
+                        fecha_creacion: new Date().toISOString()
+                    }])
+                    .select();
                 
-                if (!cliente.length) {
-                    await db.end();
-                    return res.status(400).json({ error: 'Cliente no encontrado' });
-                }
-
-                const [result] = await db.execute(`
-                    INSERT INTO contratos (
-                        numero_contrato, cliente_id, cliente_nombre, cliente_ruc,
-                        fecha_creacion, fecha_inicio, fecha_finalizacion, referencia,
-                        tarifa, horas_contratadas, horas_reportadas, horas_facturadas,
-                        subtotal, itbms, total, estado
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                    numero_contrato, cliente_id, cliente[0].nombre, cliente[0].ruc,
-                    fecha_creacion, fecha_inicio, fecha_finalizacion, referencia,
-                    tarifa, horas_contratadas, 0, horas_facturadas,
-                    subtotal, itbms, total, estado || 'borrador'
-                ]);
+                if (insertError) throw insertError;
                 
-                await db.end();
                 return res.json({ 
                     success: true, 
-                    id: result.insertId,
-                    totales: { subtotal, itbms, total }
+                    id: newContrato[0].id,
+                    message: 'Contrato creado exitosamente' 
                 });
 
             case 'PUT':
@@ -103,51 +117,51 @@ export default async function handler(req, res) {
                 const updateData = req.body;
                 
                 if (!contratoId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de contrato requerido' });
                 }
 
-                // Recalcular totales si es necesario
-                if (updateData.horas_facturadas || updateData.tarifa) {
-                    const subtotal = updateData.horas_facturadas * updateData.tarifa;
+                // Recalcular valores si se actualiza el monto
+                let updateFields = { ...updateData };
+                
+                if (updateData.monto) {
+                    const monto = parseFloat(updateData.monto);
+                    const subtotal = monto;
                     const itbms = subtotal * 0.07;
                     const total = subtotal + itbms;
                     
-                    updateData.subtotal = subtotal;
-                    updateData.itbms = itbms;
-                    updateData.total = total;
+                    updateFields = {
+                        ...updateFields,
+                        subtotal,
+                        itbms,
+                        total
+                    };
                 }
 
-                await db.execute(`
-                    UPDATE contratos SET 
-                    fecha_inicio = ?, fecha_finalizacion = ?, referencia = ?,
-                    tarifa = ?, horas_contratadas = ?, horas_reportadas = ?,
-                    horas_facturadas = ?, subtotal = ?, itbms = ?, total = ?, estado = ?
-                    WHERE id = ?
-                `, [
-                    updateData.fecha_inicio, updateData.fecha_finalizacion, updateData.referencia,
-                    updateData.tarifa, updateData.horas_contratadas, updateData.horas_reportadas,
-                    updateData.horas_facturadas, updateData.subtotal, updateData.itbms, 
-                    updateData.total, updateData.estado, contratoId
-                ]);
+                const { error: updateError } = await supabase
+                    .from('contratos')
+                    .update(updateFields)
+                    .eq('id', contratoId);
                 
-                await db.end();
+                if (updateError) throw updateError;
                 return res.json({ success: true, message: 'Contrato actualizado' });
 
             case 'DELETE':
+                // Eliminar contrato (soft delete)
                 const deleteId = req.query.id;
                 
                 if (!deleteId) {
-                    await db.end();
                     return res.status(400).json({ error: 'ID de contrato requerido' });
                 }
 
-                await db.execute('UPDATE contratos SET estado = ? WHERE id = ?', ['cancelado', deleteId]);
-                await db.end();
-                return res.json({ success: true, message: 'Contrato cancelado' });
+                const { error: deleteError } = await supabase
+                    .from('contratos')
+                    .update({ activo: false, estado: 'Cancelado' })
+                    .eq('id', deleteId);
+                
+                if (deleteError) throw deleteError;
+                return res.json({ success: true, message: 'Contrato eliminado' });
 
             default:
-                await db.end();
                 return res.status(405).json({ error: 'Método no permitido' });
         }
 
