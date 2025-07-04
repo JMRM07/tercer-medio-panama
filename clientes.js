@@ -71,13 +71,17 @@ async function guardarCliente(event) {
             clienteEditando = null;
         } else {
             // Crear nuevo cliente
-            await apiAdapter.createCliente(clienteData);
+            console.log('Creando cliente con datos:', clienteData);
+            const result = await apiAdapter.createCliente(clienteData);
+            console.log('Resultado de crear cliente:', result);
             mostrarMensaje('Cliente guardado exitosamente', 'exito');
         }
 
         // Limpiar formulario y recargar tabla
         document.getElementById('clienteForm').reset();
-        cargarClientes();
+        console.log('Recargando tabla de clientes...');
+        await cargarClientes();
+        console.log('Tabla de clientes recargada');
 
     } catch (error) {
         console.error('Error al guardar cliente:', error);
@@ -113,12 +117,16 @@ function validarCampos(nombre, ruc, dv, email, telefono) {
 // Función para cargar clientes
 async function cargarClientes() {
     try {
+        console.log('Iniciando carga de clientes...');
         const clientes = await apiAdapter.getClientes();
+        console.log('Clientes recibidos:', clientes);
+        
         const tbody = document.getElementById('clientesBody');
         
         tbody.innerHTML = '';
         
         if (!clientes || clientes.length === 0) {
+            console.log('No hay clientes para mostrar');
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" style="text-align: center; padding: 2rem; color: #666;">
@@ -130,6 +138,7 @@ async function cargarClientes() {
             return;
         }
 
+        console.log(`Mostrando ${clientes.length} clientes en la tabla`);
         clientes.forEach(cliente => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -196,7 +205,7 @@ async function eliminarCliente(id) {
     try {
         await apiAdapter.deleteCliente(id);
         mostrarMensaje('Cliente eliminado exitosamente', 'exito');
-        cargarClientes();
+        await cargarClientes();
 
     } catch (error) {
         console.error('Error al eliminar cliente:', error);
