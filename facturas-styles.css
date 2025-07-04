@@ -1,0 +1,680 @@
+/* Estilos generales */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Estilos para el encabezado */
+.page-header {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-title h1 {
+    font-size: 2rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header-subtitle {
+    margin: 0.5rem 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.fecha-actual {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+/* Estilos para los filtros */
+.filters-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #2c3e50;
+    white-space: nowrap;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Estilos para la tabla */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.table-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.table-title h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5rem;
+}
+
+.table-subtitle {
+    margin: 0.25rem 0 0;
+    color: #6c757d;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+#facturasTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#facturasTable th {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: left;
+    border-bottom: 2px solid #e9ecef;
+    white-space: nowrap;
+}
+
+#facturasTable td {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+}
+
+#facturasTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#facturasTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Estilos para los estados */
+.estado {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.estado-procesado {
+    background-color: #e6f4ea;
+    color: #1e7e34;
+    border: 1px solid #c3e6cb;
+}
+
+.estado-pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Estilos para el origen */
+.origen {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.origen-contrato {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    border: 1px solid #bbdefb;
+}
+
+.origen-cotizacion {
+    background-color: #f3e5f5;
+    color: #4a148c;
+    border: 1px solid #e1bee7;
+}
+
+/* Estilos para los botones de acción */
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: #fff;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #138496, #0f6674);
+    color: #fff;
+}
+
+.btn-back {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-back:hover {
+    background: linear-gradient(135deg, #495057, #343a40);
+    color: #fff;
+}
+
+.acciones {
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Estilos para el modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 2% auto;
+    padding: 2rem;
+    width: 95%;
+    max-width: 1000px;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: modalSlideIn 0.3s ease;
+    overflow-y: auto;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-cerrar {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.btn-cerrar:hover {
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+/* Estilos para los detalles de la factura */
+.detalles-factura {
+    display: grid;
+    gap: 2rem;
+}
+
+.detalles-factura-responsive {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.detalle-grupo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.detalle-item {
+    flex: 1 1 200px;
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.5rem;
+}
+
+.detalle-label {
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.detalle-valor {
+    font-family: monospace;
+    font-size: 1.1rem;
+    color: #1e293b;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.detalle-descripcion {
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.detalle-descripcion h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2563eb;
+    font-size: 1.05rem;
+}
+
+.descripcion-texto {
+    color: #334155;
+    font-size: 1rem;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.items-factura {
+    margin-top: 1.5rem;
+}
+
+.items-factura h4 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.items-factura table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.95rem;
+}
+
+.items-factura th,
+.items-factura td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
+}
+
+.items-factura th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.items-factura td {
+    word-break: break-word;
+    max-width: 300px;
+}
+
+.items-factura td:first-child {
+    max-width: 400px;
+}
+
+.totales-factura {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.total-item {
+    text-align: right;
+    min-width: 150px;
+}
+
+.total-label {
+    font-weight: 500;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.total-valor {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Estilos para el estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #dee2e6;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .header-info {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filters-container {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 98%;
+        margin: 1% auto;
+        padding: 1rem;
+        max-height: 95vh;
+    }
+
+    .detalles-factura-responsive {
+        padding: 1rem;
+    }
+
+    .detalle-grupo {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .detalle-item {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .items-factura table {
+        font-size: 0.85rem;
+    }
+
+    .items-factura th,
+    .items-factura td {
+        padding: 0.5rem;
+    }
+
+    .totales-factura {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .total-item {
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 700px) {
+    .detalles-factura-responsive {
+        padding: 0.75rem;
+    }
+    
+    .detalle-grupo {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.7rem;
+    }
+    
+    .detalle-item {
+        min-width: 0;
+        font-size: 0.98rem;
+    }
+    
+    .detalle-descripcion {
+        padding: 0.7rem;
+    }
+
+    .items-factura table {
+        font-size: 0.8rem;
+    }
+
+    .items-factura th,
+    .items-factura td {
+        padding: 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
+        padding: 0.75rem;
+    }
+
+    .modal-header {
+        padding: 0.75rem 0;
+        margin-bottom: 1rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .detalles-factura-responsive {
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+
+    .detalle-grupo {
+        padding: 0.5rem;
+    }
+
+    .items-factura h4 {
+        font-size: 1rem;
+    }
+
+    .items-factura table {
+        font-size: 0.75rem;
+    }
+
+    .items-factura th,
+    .items-factura td {
+        padding: 0.3rem;
+    }
+
+    .totales-factura {
+        padding: 1rem;
+    }
+
+    .total-valor {
+        font-size: 1.1rem;
+    }
+}
+
+/* Media queries para pantallas grandes */
+@media (min-width: 1200px) {
+    .modal-content {
+        max-width: 1200px;
+        margin: 1% auto;
+    }
+
+    .detalles-factura-responsive {
+        padding: 2rem;
+    }
+
+    .detalle-item {
+        flex: 1 1 250px;
+        min-width: 220px;
+    }
+
+    .items-factura table {
+        font-size: 1rem;
+    }
+
+    .items-factura th,
+    .items-factura td {
+        padding: 1rem;
+    }
+}
+
+@media (min-width: 1600px) {
+    .modal-content {
+        max-width: 1400px;
+    }
+
+    .detalles-factura-responsive {
+        padding: 2.5rem;
+    }
+
+    .detalle-item {
+        flex: 1 1 300px;
+        min-width: 250px;
+    }
+
+    .items-factura table {
+        font-size: 1.05rem;
+    }
+} 

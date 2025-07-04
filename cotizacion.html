@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización - TMP</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cotizacion-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+    @media (max-width: 600px) {
+      .page-header, .container > .form-container { display: none !important; }
+    }
+    </style>
+</head>
+<body>
+    <!-- Modal de visualización -->
+    <div id="modalVisualizacion" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Detalles de la Cotización</h3>
+                <button class="btn-cerrar" onclick="cerrarModalVisualizacion()">&times;</button>
+            </div>
+            <div class="modal-body" id="detallesCotizacion">
+                <!-- Los detalles se cargarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de facturación -->
+    <div id="modalFacturacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Generar Factura</h3>
+                <button class="btn-cerrar" onclick="cerrarModalFacturacion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="facturaForm" onsubmit="generarFactura(event)">
+                    <div class="form-group">
+                        <label for="numeroFactura">Número de Factura:</label>
+                        <input type="text" id="numeroFactura" required readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="fechaFactura">Fecha de Factura:</label>
+                        <input type="date" id="fechaFactura" required>
+                    </div>
+                    
+                    <div id="resumenFactura" class="resumen-container">
+                        <!-- El resumen se cargará dinámicamente -->
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="cerrarModalFacturacion()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-file-invoice"></i> Generar Factura
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Acción</h3>
+                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion"></p>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                    <button id="btnConfirmarAccion" class="btn-primary btn-delete">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER Y FORMULARIO SOLO EN DESKTOP -->
+    <div class="container">
+        <header class="page-header desktop-only">
+            <div class="header-content">
+                <h1>Nueva Cotización</h1>
+                <div class="header-info">
+                    <div class="fecha-actual">
+                        <span>Fecha:</span>
+                        <span id="fechaActual"></span>
+                    </div>
+                    <button onclick="window.location.href='menu.html'" class="btn-back">Volver al Menú Principal</button>
+                </div>
+            </div>
+        </header>
+        <div class="form-container desktop-only">
+            <form id="formularioCotizacionDesktop" onsubmit="event.preventDefault(); registrarCotizacionDesktop();">
+                <div class="form-group">
+                    <label for="clienteDesktop">Cliente</label>
+                    <select id="clienteDesktop" class="form-control" required>
+                        <option value="">Seleccione un cliente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="descripcionDesktop">Descripción</label>
+                    <textarea id="descripcionDesktop" class="form-control" rows="2" placeholder="Ingrese una descripción para la cotización..."></textarea>
+                </div>
+                <div class="items-section">
+                    <h3>Items</h3>
+                    <div id="itemsContainerDesktop"></div>
+                    <button type="button" class="btn btn-add-item" onclick="agregarItemDesktop()">
+                        <i class="fas fa-plus"></i> Agregar Item
+                    </button>
+                </div>
+                <div class="totales-section">
+                    <div class="total-item">
+                        <span>Subtotal:</span>
+                        <span id="subtotalDesktop">$0.00</span>
+                    </div>
+                    <div class="total-item">
+                        <span>ITBMS (7%):</span>
+                        <span id="itbmsDesktop">$0.00</span>
+                    </div>
+                    <div class="total-item total-final">
+                        <span>Total:</span>
+                        <span id="totalDesktop">$0.00</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="reset" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Registrar Cotización
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="table-container">
+            <div class="table-header">
+                <h2>Cotizaciones Registradas</h2>
+                <div class="table-actions">
+                    <!-- <button onclick="mostrarTodasCotizaciones()" class="btn-view-all">Ver Todas</button> -->
+                    <!-- <button onclick="limpiarTablaCotizaciones()" class="btn-action btn-delete">Limpiar Tabla</button> -->
+                </div>
+            </div>
+            <table id="cotizacionesTable">
+                <colgroup>
+                    <col class="codigo">
+                    <col class="fecha">
+                    <col class="cliente">
+                    <col class="detalles">
+                    <col class="totales">
+                    <col class="descripcion">
+                    <col class="estado">
+                    <col class="acciones">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="codigo">Código</th>
+                        <th class="fecha">Fecha</th>
+                        <th class="cliente">Cliente</th>
+                        <th class="detalles">Detalles</th>
+                        <th class="totales">Totales</th>
+                        <th class="descripcion">Descripción</th>
+                        <th class="estado">Estado</th>
+                        <th class="acciones">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cotizacionesBody">
+                    <!-- Las cotizaciones se cargarán dinámicamente aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL DE COTIZACIÓN PARA MÓVIL -->
+    <div id="modalCotizacion" class="modal modal-cotizacion">
+        <div class="modal-content modal-cotizacion-content">
+            <div class="modal-header">
+                <h2>Nueva Cotización</h2>
+                <button type="button" class="close" onclick="cerrarModalCotizacion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formularioCotizacion" onsubmit="event.preventDefault(); registrarCotizacion();">
+                    <div class="form-group">
+                        <label for="cliente">Cliente</label>
+                        <select id="cliente" class="form-control" required>
+                            <option value="">Seleccione un cliente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <textarea id="descripcion" class="form-control" rows="2" placeholder="Ingrese una descripción para la cotización..."></textarea>
+                    </div>
+                    <div class="items-section">
+                        <h3>Items</h3>
+                        <div id="itemsContainer"></div>
+                        <button type="button" class="btn btn-add-item" onclick="agregarItem()">
+                            <i class="fas fa-plus"></i> Agregar Item
+                        </button>
+                    </div>
+                    <div class="totales-section">
+                        <div class="total-item">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="total-item">
+                            <span>ITBMS (7%):</span>
+                            <span id="itbms">$0.00</span>
+                        </div>
+                        <div class="total-item total-final">
+                            <span>Total:</span>
+                            <span id="total">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalCotizacion()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Registrar Cotización
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- BOTÓN FLOTANTE SOLO EN MÓVIL -->
+    <button id="btnAbrirModalCotizacion" class="btn btn-primary btn-fab mobile-only" onclick="abrirModalCotizacion()">
+        <i class="fas fa-plus"></i> Nueva Cotización
+    </button>
+
+    <script src="cotizacion.js"></script>
+</body>
+</html> 

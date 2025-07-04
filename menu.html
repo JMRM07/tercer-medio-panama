@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal - Software Solutions</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="menu-styles.css">
+</head>
+<body>
+    <div class="menu-container">
+        <header class="menu-header">
+            <div class="logo-section">
+                <div class="logo-container">
+                    <div class="logo">
+                        <img src="./img/tmi.jpeg" alt="TMP Logo" class="logo-image">
+                    </div>
+                    <div class="company-name">
+                        <h1>Tercer Medio</h1>
+                        <h2>Panamá</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="user-info">
+                <span id="nombreUsuario">Bienvenido</span>
+                <button onclick="cerrarSesion()" class="btn-logout">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="menu-grid">
+            <div class="menu-item" onclick="navegarA('clientes.html')">
+                <div class="menu-icon">👥</div>
+                <h2>Clientes</h2>
+                <p>Gestionar información de clientes</p>
+            </div>
+
+            <div class="menu-item" onclick="navegarA('cotizacion.html')">
+                <div class="menu-icon">📝</div>
+                <h2>Cotización</h2>
+                <p>Crear y gestionar cotizaciones</p>
+            </div>
+
+            <div class="menu-item" onclick="navegarA('contratos.html')">
+                <div class="menu-icon">📋</div>
+                <h2>Contratos</h2>
+                <p>Administrar contratos de servicios</p>
+            </div>
+
+            <div class="menu-item" onclick="navegarA('facturas.html')">
+                <div class="menu-icon">📊</div>
+                <h2>Facturas</h2>
+                <p>Administrar facturas</p>
+            </div>
+
+            <div class="menu-item" onclick="navegarA('reportes.html')">
+                <div class="menu-icon">📈</div>
+                <h2>Reportes</h2>
+                <p>Generar reportes y estadísticas</p>
+            </div>
+
+            <div class="menu-item" onclick="abrirModalConfiguracion()">
+                <div class="menu-icon">⚙️</div>
+                <h2>Configuración</h2>
+                <p>Gestionar opciones del sistema</p>
+            </div>
+        </div>
+    </div>
+    <div id="modalConfiguracion" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalConfiguracion()">&times;</span>
+            <h2>Configuración del Sistema</h2>
+            
+            <div class="config-section">
+                <h3><i class="fas fa-percentage"></i> Configuración de Impuestos</h3>
+                <div class="form-group">
+                    <label for="itbmsValue">Porcentaje de ITBMS:</label>
+                    <div class="input-group">
+                        <input type="number" id="itbmsValue" min="0" max="100" step="0.1" required>
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3><i class="fas fa-money-bill-wave"></i> Configuración de Moneda</h3>
+                <div class="form-group">
+                    <label for="monedaBase">Moneda Base:</label>
+                    <select id="monedaBase" required>
+                        <option value="USD">Dólar (USD)</option>
+                        <option value="EUR">Euro (EUR)</option>
+                        <option value="VES">Bolívar (VES)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tasaCambio">Tasa de Cambio (respecto al USD):</label>
+                    <div class="input-group">
+                        <input type="number" id="tasaCambio" min="0" step="0.0001" required>
+                        <span class="input-suffix">USD</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-primary" onclick="guardarConfiguracion()">
+                    <i class="fas fa-save"></i> Guardar Configuración
+                </button>
+            </div>
+
+            <div class="config-section">
+                <h3><i class="fas fa-trash"></i> Gestión de Datos</h3>
+                <button id="btnMostrarOpcionesBorrado" class="btn-borrar-principal" onclick="toggleOpcionesBorrado()">
+                    Borrar datos registrados
+                </button>
+                <div id="opcionesBorrado" class="borrar-datos-botones" style="display: none; margin-top: 1.2rem;">
+                    <button class="btn-borrar" onclick="borrarDatos('clientes')">Borrar Clientes</button>
+                    <button class="btn-borrar" onclick="borrarDatos('cotizaciones')">Borrar Cotizaciones</button>
+                    <button class="btn-borrar" onclick="borrarDatos('contratos')">Borrar Contratos</button>
+                    <button class="btn-borrar" onclick="borrarDatos('facturas')">Borrar Facturas</button>
+                </div>
+                <div id="mensajeBorrado" class="mensaje-borrado"></div>
+            </div>
+        </div>
+    </div>
+    <div id="modalConfirmacion" class="modal-confirmacion">
+        <div class="modal-confirmacion-content">
+            <p id="mensajeConfirmacion">¿Está seguro de que desea borrar estos datos? Esta acción no se puede deshacer.</p>
+            <div class="modal-confirmacion-botones">
+                <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                <button class="btn-confirmar" id="btnConfirmarBorrado">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    <script src="menu.js"></script>
+</body>
+</html> 

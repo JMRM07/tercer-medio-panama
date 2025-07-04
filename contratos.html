@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contratos - TMP</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="contratos-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1><i class="fas fa-file-contract"></i> Gestión de Contratos</h1>
+                    <p class="header-subtitle">Administre y gestione los contratos de servicios</p>
+                </div>
+                <div class="header-info">
+                    <div class="fecha-actual">
+                        <i class="far fa-calendar-alt"></i>
+                        <span id="fechaActual"></span>
+                    </div>
+                    <button onclick="window.location.href='menu.html'" class="btn btn-back">
+                        <i class="fas fa-arrow-left"></i> Volver al Menú
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h2><i class="fas fa-plus-circle"></i> Nuevo Contrato</h2>
+            </div>
+            <form id="contratoForm" onsubmit="guardarContrato(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="numeroContrato">
+                            <i class="fas fa-hashtag"></i> Número de Contrato
+                        </label>
+                        <input type="text" id="numeroContrato" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cliente">
+                            <i class="fas fa-user"></i> Cliente
+                        </label>
+                        <select id="cliente" name="cliente" required>
+                            <option value="" disabled selected>Seleccione un cliente...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fechaCreacion">
+                            <i class="far fa-calendar"></i> Fecha de Creación
+                        </label>
+                        <input type="date" id="fechaCreacion" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoContrato">
+                            <i class="fas fa-tag"></i> Tipo de Contrato
+                        </label>
+                        <select id="tipoContrato" name="tipoContrato" required>
+                            <option value="" disabled selected>Seleccione el tipo...</option>
+                            <option value="fijo">Fijo</option>
+                            <option value="variable">Variable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="referencia">
+                        <i class="fas fa-align-left"></i> Referencia
+                    </label>
+                    <textarea id="referencia" name="referencia" rows="3" required 
+                             placeholder="Descripción detallada del contrato..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tarifa" id="labelTarifa">
+                            <i class="fas fa-dollar-sign"></i> Tarifa (USD)
+                        </label>
+                        <input type="number" id="tarifa" name="tarifa" required min="0" step="0.01"
+                               placeholder="0.00" onchange="calcularTotal()">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="horasContratadas">Horas Contratadas:</label>
+                        <input type="number" id="horasContratadas" name="horasContratadas" min="0" step="1" required onchange="calcularTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label for="horasReportadas">Horas Reportadas:</label>
+                        <input type="number" id="horasReportadas" name="horasReportadas" min="0" step="1" value="0" onchange="calcularTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label for="horasFacturadas">Horas Facturadas:</label>
+                        <input type="number" id="horasFacturadas" name="horasFacturadas" min="0" step="1" value="0" onchange="calcularTotal()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Balance de Horas:</label>
+                        <div id="balanceHoras" class="balance-horas">0</div>
+                    </div>
+                </div>
+
+                <div class="totales-container">
+                    <div class="totales-grid">
+                        <div class="total-item">
+                            <label><i class="fas fa-calculator"></i> Subtotal:</label>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="total-item">
+                            <label id="labelItbms"><i class="fas fa-percentage"></i> ITBMS (7%):</label>
+                            <span id="itbms">$0.00</span>
+                        </div>
+                        <div class="total-item total-final">
+                            <label><i class="fas fa-money-bill-wave"></i> Total:</label>
+                            <span id="total">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="guardarBorrador()">
+                        <i class="fas fa-save"></i> Guardar como Borrador
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check-circle"></i> Registrar Contrato
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <h2><i class="fas fa-list"></i> Contratos Registrados</h2>
+                    <p class="table-subtitle">Lista de todos los contratos en el sistema</p>
+                </div>
+                <div class="table-actions">
+                    <button onclick="mostrarTodosContratos()" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> Ver Todos
+                    </button>
+                    <button onclick="limpiarTablaContratos()" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Limpiar Tabla
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="contratosTable">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Creado</th>
+                            <th>Referencia</th>
+                            <th>Tipo</th>
+                            <th class="text-right">Tarifa</th>
+                            <th class="text-right">Subtotal</th>
+                            <th class="text-right">ITBMS</th>
+                            <th class="text-right">Total</th>
+                            <th>Estatus</th>
+                            <th class="text-right">H. Reportadas</th>
+                            <th class="text-right">H. Facturadas</th>
+                            <th class="text-right">Balance</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contratosBody">
+                        <!-- Los contratos se cargarán dinámicamente aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de visualización -->
+    <div id="modalVisualizacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-contract"></i> Detalles del Contrato</h3>
+                <button class="btn-cerrar" onclick="cerrarModalVisualizacion()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="detallesContrato">
+                <!-- Los detalles se cargarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Confirmar Acción</h3>
+                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion"></p>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="cerrarModalConfirmacion()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button id="btnConfirmarAccion" class="btn btn-danger">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="contratos.js"></script>
+</body>
+</html> 

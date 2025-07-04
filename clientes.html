@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes - TMP</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="clientes-styles.css">
+</head>
+<body>
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Eliminación</h3>
+                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion"></p>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                    <button id="btnConfirmarEliminar" class="btn-cliente btn-eliminar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="header-content">
+                <h1>Gestión de Clientes</h1>
+                <button onclick="window.location.href='menu.html'" class="btn-back">Volver al Menú Principal</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Formulario de registro -->
+            <div class="form-container">
+                <h2>Registrar Nuevo Cliente</h2>
+                <form id="clienteForm" onsubmit="guardarCliente(event)" data-modo="crear">
+                    <div class="form-group">
+                        <label for="nombre">Nombre del Cliente:</label>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Ingrese el nombre completo">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ruc">RUC:</label>
+                            <input type="text" id="ruc" name="ruc" required placeholder="Ingrese el RUC">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dv">DV:</label>
+                            <input type="text" id="dv" name="dv" required placeholder="01-99" maxlength="2">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono">Teléfono:</label>
+                        <input type="tel" id="telefono" name="telefono" required placeholder="+507 XXXX-XXXX">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Guardar Cliente</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabla de clientes -->
+            <div class="table-container">
+                <h2>Clientes Registrados</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>RUC</th>
+                            <th>DV</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientesBody">
+                        <!-- Los clientes se cargarán dinámicamente aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="clientes.js"></script>
+</body>
+</html> 

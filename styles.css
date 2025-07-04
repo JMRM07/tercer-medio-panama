@@ -1,0 +1,672 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+    --color-primary: #2c3e50;
+    --color-secondary: #34495e;
+    --color-accent: #95a5a6;
+    --color-light: #ecf0f1;
+    --color-white: #ffffff;
+    --color-error: #e74c3c;
+    --color-success: #27ae60;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+body {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+}
+
+.form-container {
+    background: var(--color-white);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+}
+
+.toggle-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 35px;
+    gap: 15px;
+}
+
+.toggle-btn {
+    padding: 12px 25px;
+    border: 2px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toggle-btn:hover {
+    background: var(--color-light);
+}
+
+.toggle-btn.active {
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
+}
+
+h2 {
+    text-align: center;
+    color: var(--color-primary);
+    margin-bottom: 35px;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.form {
+    display: none;
+}
+
+.form.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group {
+    margin-bottom: 25px;
+    position: relative;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--color-secondary);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--color-light);
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background: var(--color-white);
+    color: var(--color-primary);
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 8px;
+    color: var(--color-white);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-submit:hover {
+    background: var(--color-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-submit:active {
+    transform: translateY(0);
+}
+
+/* Mensajes */
+.mensaje-exito, .mensaje-error {
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 500;
+    display: none;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.mensaje-exito {
+    background-color: var(--color-success);
+    color: var(--color-white);
+}
+
+.mensaje-error {
+    background-color: var(--color-error);
+    color: var(--color-white);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+        max-width: 100%;
+    }
+
+    .form-container {
+        padding: 30px 25px;
+        margin: 10px;
+        border-radius: 12px;
+    }
+
+    .brand-section {
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+    }
+
+    .brand-section .logo-container {
+        padding: 2px;
+        border-radius: 18px;
+    }
+
+    .brand-logo {
+        width: 110px;
+        height: 110px;
+        border-radius: 16px;
+    }
+
+    .brand-text h1 {
+        font-size: 24px;
+    }
+
+    .brand-text p {
+        font-size: 13px;
+    }
+
+    .toggle-buttons {
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .toggle-btn {
+        padding: 12px 20px;
+        font-size: 14px;
+        min-width: 120px;
+    }
+
+    h2 {
+        font-size: 24px;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    input {
+        padding: 14px;
+        font-size: 16px; /* Evita zoom en iOS */
+    }
+
+    .btn-submit {
+        padding: 15px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    .form-container {
+        padding: 25px 20px;
+        margin: 5px;
+        border-radius: 10px;
+    }
+
+    .brand-section {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+    }
+
+    .brand-section .logo-container {
+        padding: 1px;
+        border-radius: 14px;
+    }
+
+    .brand-logo {
+        width: 85px;
+        height: 85px;
+        border-radius: 12px;
+    }
+
+    .brand-text h1 {
+        font-size: 20px;
+    }
+
+    .brand-text p {
+        font-size: 12px;
+    }
+
+    .toggle-buttons {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 25px;
+    }
+
+    .toggle-btn {
+        padding: 12px 15px;
+        font-size: 13px;
+        width: 100%;
+        min-width: auto;
+    }
+
+    h2 {
+        font-size: 20px;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    label {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    input {
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 6px;
+    }
+
+    .btn-submit {
+        padding: 14px;
+        font-size: 14px;
+        border-radius: 6px;
+    }
+
+    .mensaje-exito, .mensaje-error {
+        padding: 12px;
+        font-size: 13px;
+        margin-top: 15px;
+    }
+
+    .password-toggle {
+        right: 8px;
+        font-size: 14px;
+    }
+
+    .strength-text {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 360px) {
+    .container {
+        padding: 5px;
+    }
+
+    .form-container {
+        padding: 20px 15px;
+        margin: 2px;
+    }
+
+    .brand-section {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+
+    .brand-section .logo-container {
+        padding: 0;
+        border-radius: 10px;
+    }
+
+    .brand-logo {
+        width: 65px;
+        height: 65px;
+        border-radius: 8px;
+    }
+
+    .brand-text h1 {
+        font-size: 18px;
+    }
+
+    .brand-text p {
+        font-size: 11px;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    .toggle-btn {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    .btn-submit {
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .password-toggle {
+        right: 6px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 320px) {
+    .form-container {
+        padding: 15px 10px;
+    }
+
+    .brand-section .logo-container {
+        padding: 0;
+        border-radius: 8px;
+    }
+
+    .brand-logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+    }
+
+    .brand-text h1 {
+        font-size: 16px;
+    }
+
+    .brand-text p {
+        font-size: 10px;
+    }
+
+    h2 {
+        font-size: 16px;
+    }
+
+    .toggle-btn {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    input {
+        padding: 8px;
+    }
+
+    .btn-submit {
+        padding: 10px;
+        font-size: 12px;
+    }
+}
+
+/* Ajustes para orientación landscape en móviles */
+@media (max-height: 500px) and (orientation: landscape) {
+    .container {
+        padding: 5px;
+    }
+
+    .form-container {
+        padding: 15px 20px;
+        margin: 5px;
+    }
+
+    .brand-section {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+
+    .brand-section .logo-container {
+        padding: 0;
+        border-radius: 8px;
+    }
+
+    .brand-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+    }
+
+    .brand-text h1 {
+        font-size: 16px;
+    }
+
+    .brand-text p {
+        font-size: 10px;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .toggle-buttons {
+        margin-bottom: 20px;
+    }
+}
+
+/* Estilos para la sección de branding */
+.brand-section {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--color-light);
+}
+
+.brand-section .logo-container {
+    margin-bottom: 15px;
+    display: inline-block;
+    padding: 4px;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 4px 18px rgba(44, 62, 80, 0.10);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.brand-section .logo-container::before {
+    display: none;
+}
+
+.brand-logo {
+    width: 150px;
+    height: 150px;
+    border-radius: 22px;
+    object-fit: contain;
+    box-shadow: none;
+    transition: transform 0.3s ease;
+    display: block;
+    background: transparent;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.brand-logo:hover {
+    transform: scale(1.04);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+}
+
+.brand-text h1 {
+    color: var(--color-primary);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.brand-text p {
+    color: var(--color-secondary);
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+/* Contenedor de contraseña */
+.password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-container input {
+    padding-right: 50px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    cursor: pointer;
+    padding: 5px;
+    font-size: 16px;
+    transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+    color: var(--color-primary);
+}
+
+/* Indicador de fortaleza de contraseña */
+.password-strength {
+    margin-top: 8px;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--color-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-fill {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-fill.weak {
+    width: 25%;
+    background: var(--color-error);
+}
+
+.strength-fill.fair {
+    width: 50%;
+    background: #f39c12;
+}
+
+.strength-fill.good {
+    width: 75%;
+    background: #f1c40f;
+}
+
+.strength-fill.strong {
+    width: 100%;
+    background: var(--color-success);
+}
+
+.strength-text {
+    font-size: 12px;
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+.strength-text.weak {
+    color: var(--color-error);
+}
+
+.strength-text.fair {
+    color: #f39c12;
+}
+
+.strength-text.good {
+    color: #f1c40f;
+}
+
+.strength-text.strong {
+    color: var(--color-success);
+}
+
+/* Mejoras en los botones */
+.toggle-btn i {
+    margin-right: 8px;
+}
+
+.btn-submit i {
+    margin-right: 8px;
+}
+
+/* Mejoras en los labels */
+label i {
+    margin-right: 8px;
+    color: var(--color-primary);
+} 

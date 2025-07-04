@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Software Solutions</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="reportes-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-container">
+                    <div class="logo">
+                        <img src="./img/tmi.jpeg" alt="TMP Logo" class="logo-image">
+                    </div>
+                    <div class="company-name">
+                        <h1>Tercer Medio</h1>
+                        <h2>Panamá</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="user-info">
+                <span id="nombreUsuario">Bienvenido</span>
+                <button onclick="cerrarSesion()" class="btn-logout">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="content-section">
+            <div class="title-section">
+                <div class="titulo-container">
+                    <div class="icono-titulo">📈</div>
+                    <div>
+                        <h1>Reportes</h1>
+                        <p>Generar reportes y estadísticas del sistema</p>
+                    </div>
+                </div>
+                <button onclick="volverAlMenu()" class="btn-menu">
+                    🏠 Volver al Menú
+                </button>
+            </div>
+
+            <div class="reportes-container">
+                <div class="filtros-section">
+                    <h3>📊 Filtros de Reporte</h3>
+                    <div class="filtros-grid">
+                        <div class="filtro-group">
+                            <label for="clienteReporte">Cliente:</label>
+                            <select id="clienteReporte">
+                                <option value="todos">Todos los Clientes</option>
+                            </select>
+                        </div>
+                        <div class="filtro-group">
+                            <label for="tipoReporte">Tipo de Reporte:</label>
+                            <select id="tipoReporte" onchange="cambiarTipoReporte()">
+                                <option value="facturas">Facturas</option>
+                                <option value="cotizaciones">Cotizaciones</option>
+                                <option value="contratos">Contratos</option>
+                            </select>
+                        </div>
+                        <div class="filtro-group">
+                            <label for="fechaDesde">Fecha Desde:</label>
+                            <input type="date" id="fechaDesde">
+                        </div>
+                        <div class="filtro-group">
+                            <label for="fechaHasta">Fecha Hasta:</label>
+                            <input type="date" id="fechaHasta">
+                        </div>
+                        <div class="filtro-group">
+                            <label for="estado">Estado:</label>
+                            <select id="estado">
+                                <option value="todos">Todos</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="procesado">Procesado</option>
+                                <option value="borrador">Borrador</option>
+                                <option value="activo">Activo</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filtros-acciones">
+                        <button onclick="generarReporte()" class="btn-generar">
+                            📊 Generar Reporte
+                        </button>
+                        <button onclick="imprimirReporte()" class="btn-exportar">
+                            🖨️ Imprimir
+                        </button>
+                        <button onclick="limpiarFiltros()" class="btn-limpiar">
+                            🗑️ Limpiar Filtros
+                        </button>
+                        <button onclick="limpiarHistorialReportes()" class="btn-eliminar-historial">
+                            🗑️ Limpiar Reportes
+                        </button>
+                    </div>
+                </div>
+
+                <div class="estadisticas-section">
+                    <h3>📈 Estadísticas Rápidas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-info">
+                                <h4>Total Clientes</h4>
+                                <span id="totalClientes">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-info">
+                                <h4>Cotizaciones</h4>
+                                <span id="totalCotizaciones">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-info">
+                                <h4>Contratos</h4>
+                                <span id="totalContratos">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-info">
+                                <h4>Facturas</h4>
+                                <span id="totalFacturas">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-info">
+                                <h4>Ingresos Totales</h4>
+                                <span id="ingresosTotales">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-info">
+                                <h4>Pendientes</h4>
+                                <span id="totalPendientes">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reporte-contenido">
+                    <div class="reporte-header">
+                        <h3 id="tituloReporte">📋 Selecciona un tipo de reporte</h3>
+                        <div class="reporte-info">
+                            <span id="fechaGeneracion"></span>
+                        </div>
+                    </div>
+                    <div class="tabla-container">
+                        <div id="contenidoReporte" class="contenido-reporte">
+                            <div class="mensaje-placeholder">
+                                <div class="placeholder-icon">📊</div>
+                                <p>Selecciona un tipo de reporte y haz clic en "Generar Reporte" para ver los resultados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api-adapter.js"></script>
+    <script src="reportes.js"></script>
+</body>
+</html> 
