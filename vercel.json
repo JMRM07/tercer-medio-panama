@@ -1,12 +1,6 @@
 {
   "version": 2,
   "name": "tercer-medio-panama",
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
