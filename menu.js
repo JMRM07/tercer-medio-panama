@@ -1,6 +1,6 @@
 // Verificar si usuario está autenticado
 function verificarAutenticacion() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (!token) {
         window.location.href = 'index.html';
         return false;
@@ -19,8 +19,8 @@ function navegarA(pagina) {
 // Función para cerrar sesión
 function cerrarSesion() {
     if (confirm('¿Está seguro que desea cerrar sesión?')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('usuarioActual');
         window.location.href = 'index.html';
     }
 }
@@ -81,7 +81,7 @@ async function guardarConfiguracion() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
             },
             body: JSON.stringify({
                 itbms: itbms,
@@ -141,7 +141,7 @@ async function confirmarBorrado() {
         const response = await fetch(`/api/${tipoDatoABorrar}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
             }
         });
         
@@ -181,11 +181,16 @@ function cerrarModalConfirmacion() {
 
 // Función para cargar nombre de usuario
 function cargarNombreUsuario() {
-    const usuario = localStorage.getItem('usuario');
-    if (usuario) {
-        const nombreUsuario = document.getElementById('nombreUsuario');
-        if (nombreUsuario) {
-            nombreUsuario.textContent = `Bienvenido, ${usuario}`;
+    const usuarioData = localStorage.getItem('usuarioActual');
+    if (usuarioData) {
+        try {
+            const usuario = JSON.parse(usuarioData);
+            const nombreUsuario = document.getElementById('nombreUsuario');
+            if (nombreUsuario) {
+                nombreUsuario.textContent = `Bienvenido, ${usuario.nombre || usuario.usuario}`;
+            }
+        } catch (error) {
+            console.error('Error al cargar usuario:', error);
         }
     }
 }
