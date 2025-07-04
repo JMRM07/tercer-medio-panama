@@ -1,18 +1,12 @@
-// Función serverless para Vercel - Autenticación
-import mysql from 'mysql2/promise';
+// Función serverless para Vercel - Autenticación con Supabase
+import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-async function connectDB() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: process.env.DB_PORT
-    });
-    return connection;
-}
+// Configuración de Supabase
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tu-clave-secreta-super-segura';
 
@@ -27,84 +21,32 @@ export default async function handler(req, res) {
     }
 
     try {
-        const db = await connectDB();
         const action = req.query.action;
 
         switch (action) {
-            case 'login':
-                // Autenticar usuario
-                if (req.method !== 'POST') {
-                    await db.end();
-                    return res.status(405).json({ error: 'Método no permitido' });
-                }
-
-                const { usuario, password } = req.body;
-                
-                if (!usuario || !password) {
-                    await db.end();
-                    return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
-                }
-
-                // Buscar usuario en la base de datos
-                const [users] = await db.execute('SELECT * FROM usuarios WHERE usuario = ? AND activo = 1', [usuario]);
-                
-                if (!users.length) {
-                    await db.end();
-                    return res.status(401).json({ error: 'Credenciales inválidas' });
-                }
-
-                const user = users[0];
-                
-                // Verificar contraseña
-                const passwordValid = await bcrypt.compare(password, user.password_hash);
-                
-                if (!passwordValid) {
-                    await db.end();
-                    return res.status(401).json({ error: 'Credenciales inválidas' });
-                }
-
-                // Generar token JWT
-                const token = jwt.sign(
-                    { 
-                        id: user.id, 
-                        usuario: user.usuario, 
-                        nombre: user.nombre 
-                    },
-                    JWT_SECRET,
-                    { expiresIn: '24h' }
-                );
-
-                await db.end();
-                return res.json({
-                    success: true,
-                    token,
-                    user: {
-                        id: user.id,
-                        usuario: user.usuario,
-                        nombre: user.nombre,
-                        email: user.email
-                    }
-                });
-
             case 'register':
-                // Registrar nuevo usuario
                 if (req.method !== 'POST') {
-                    await db.end();
                     return res.status(405).json({ error: 'Método no permitido' });
                 }
 
                 const { usuario: newUser, nombre, email, telefono, password: newPassword } = req.body;
                 
                 if (!newUser || !nombre || !email || !newPassword) {
-                    await db.end();
                     return res.status(400).json({ error: 'Datos incompletos' });
                 }
 
-                // Verificar si el usuario ya existe
-                const [existingUsers] = await db.execute('SELECT id FROM usuarios WHERE usuario = ? OR email = ?', [newUser, email]);
+                // Verificar usuario existente
+                const { data: userCheck } = await supabase
+                    .from('usuarios')
+                    .select('id')
+                    .eq('usuario', newUser);
+
+                const { data: emailCheck } = await supabase
+                    .from('usuarios')
+                    .select('id')
+                    .eq('email', email);
                 
-                if (existingUsers.length > 0) {
-                    await db.end();
+                if ((userCheck && userCheck.length > 0) || (emailCheck && emailCheck.length > 0)) {
                     return res.status(400).json({ error: 'Usuario o email ya existe' });
                 }
 
@@ -113,57 +55,68 @@ export default async function handler(req, res) {
                 const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
                 // Crear usuario
-                const [result] = await db.execute(`
-                    INSERT INTO usuarios (usuario, nombre, email, telefono, password_hash) 
-                    VALUES (?, ?, ?, ?, ?)
-                `, [newUser, nombre, email, telefono, hashedPassword]);
+                const { data: newUserData, error: insertError } = await supabase
+                    .from('usuarios')
+                    .insert([{
+                        usuario: newUser,
+                        nombre: nombre,
+                        email: email,
+                        telefono: telefono,
+                        password_hash: hashedPassword
+                    }])
+                    .select();
 
-                await db.end();
+                if (insertError) {
+                    console.error('Error al crear usuario:', insertError);
+                    return res.status(500).json({ 
+                        error: 'Error al crear usuario',
+                        details: insertError.message 
+                    });
+                }
+
                 return res.json({
                     success: true,
                     message: 'Usuario registrado exitosamente',
-                    id: result.insertId
+                    id: newUserData[0].id
                 });
 
-            case 'verify':
-                // Verificar token JWT
-                if (req.method !== 'GET') {
-                    await db.end();
+            case 'login':
+                if (req.method !== 'POST') {
                     return res.status(405).json({ error: 'Método no permitido' });
                 }
 
-                const authHeader = req.headers.authorization;
-                const token = authHeader && authHeader.split(' ')[1];
-
-                if (!token) {
-                    await db.end();
-                    return res.status(401).json({ error: 'Token no proporcionado' });
+                const { usuario, password } = req.body;
+                
+                if (!usuario || !password) {
+                    return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
                 }
 
-                try {
-                    const decoded = jwt.verify(token, JWT_SECRET);
-                    
-                    // Verificar que el usuario aún existe y está activo
-                    const [users] = await db.execute('SELECT id, usuario, nombre, email FROM usuarios WHERE id = ? AND activo = 1', [decoded.id]);
-                    
-                    if (!users.length) {
-                        await db.end();
-                        return res.status(401).json({ error: 'Usuario no válido' });
-                    }
-
-                    await db.end();
-                    return res.json({
-                        valid: true,
-                        user: users[0]
-                    });
-
-                } catch (error) {
-                    await db.end();
-                    return res.status(401).json({ error: 'Token inválido' });
+                const { data: users, error: userError } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('usuario', usuario)
+                    .eq('activo', true);
+                
+                if (userError || !users || users.length === 0) {
+                    return res.status(401).json({ error: 'Credenciales inválidas' });
                 }
+
+                const user = users[0];
+                const passwordValid = await bcrypt.compare(password, user.password_hash);
+                
+                if (!passwordValid) {
+                    return res.status(401).json({ error: 'Credenciales inválidas' });
+                }
+
+                const token = jwt.sign({ id: user.id, usuario: user.usuario, nombre: user.nombre }, JWT_SECRET, { expiresIn: '24h' });
+
+                return res.json({
+                    success: true,
+                    token,
+                    user: { id: user.id, usuario: user.usuario, nombre: user.nombre, email: user.email }
+                });
 
             default:
-                await db.end();
                 return res.status(400).json({ error: 'Acción no válida' });
         }
 
@@ -174,4 +127,4 @@ export default async function handler(req, res) {
             details: error.message 
         });
     }
-} 
+}
