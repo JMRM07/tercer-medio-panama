@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Variables globales
 let clienteEditando = null;
-const apiAdapter = new APIAdapter();
+// apiAdapter ya está disponible globalmente desde api-adapter.js
 
 // Función para mostrar mensajes en la página (no alert)
 function mostrarMensaje(mensaje, tipo = 'info') {

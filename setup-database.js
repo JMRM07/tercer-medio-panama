@@ -60,16 +60,47 @@ const createTables = async (connection) => {
     await connection.execute(`
         CREATE TABLE IF NOT EXISTS clientes (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            codigo VARCHAR(10) UNIQUE NOT NULL,
-            nombre VARCHAR(150) NOT NULL,
-            ruc VARCHAR(50) NOT NULL,
+            codigo VARCHAR(50) UNIQUE NOT NULL,
+            nombre VARCHAR(255) NOT NULL,
+            ruc VARCHAR(20) NOT NULL,
             dv VARCHAR(2) NOT NULL,
-            email VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL,
             telefono VARCHAR(20),
-            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            activo BOOLEAN DEFAULT TRUE,
-            INDEX idx_codigo (codigo)
+            direccion TEXT,
+            activo BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
+    // Crear índices para mejor performance
+    await connection.execute(`
+        CREATE INDEX IF NOT EXISTS idx_clientes_codigo ON clientes(codigo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_activo ON clientes(activo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_nombre ON clientes(nombre);
+    `);
+
+    // Habilitar RLS (Row Level Security)
+    await connection.execute(`
+        ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
+    `);
+
+    // Crear política para permitir todas las operaciones (temporal para desarrollo)
+    await connection.execute(`
+        CREATE POLICY "Permitir todo en clientes" ON clientes
+            FOR ALL 
+            TO authenticated 
+            USING (true) 
+            WITH CHECK (true);
+    `);
+
+    // Crear política para usuarios anónimos (para el registro)
+    await connection.execute(`
+        CREATE POLICY "Permitir acceso anónimo a clientes" ON clientes
+            FOR ALL 
+            TO anon 
+            USING (true) 
+            WITH CHECK (true);
     `);
 
     // Tabla de cotizaciones
