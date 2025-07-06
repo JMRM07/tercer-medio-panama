@@ -7,12 +7,61 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     console.log('Clientes.js cargado correctamente');
+    
+    // Configurar event listeners
+    configurarEventListeners();
+    
+    // Cargar clientes iniciales
     cargarClientes();
 });
 
 // Variables globales
 let clienteEditando = null;
+let clienteEliminando = null;
 // apiAdapter ya está disponible globalmente desde api-adapter.js
+
+// Configurar todos los event listeners
+function configurarEventListeners() {
+    // Event listener para el formulario
+    const form = document.getElementById('clienteForm');
+    if (form) {
+        form.addEventListener('submit', guardarCliente);
+    }
+
+    // Event listener para el botón de volver
+    const btnVolver = document.querySelector('[onclick="window.location.href=\'menu.html\'"]');
+    if (btnVolver) {
+        btnVolver.removeAttribute('onclick');
+        btnVolver.addEventListener('click', function() {
+            window.location.href = 'menu.html';
+        });
+    }
+
+    // Event listeners para modal
+    const modal = document.getElementById('modalConfirmacion');
+    const btnCerrar = document.querySelector('.btn-cerrar');
+    const btnCancelar = document.querySelector('.modal-buttons .btn-secondary');
+    const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+
+    if (btnCerrar) {
+        btnCerrar.addEventListener('click', cerrarModalConfirmacion);
+    }
+    if (btnCancelar) {
+        btnCancelar.addEventListener('click', cerrarModalConfirmacion);
+    }
+    if (btnConfirmar) {
+        btnConfirmar.addEventListener('click', confirmarEliminarCliente);
+    }
+
+    // Cerrar modal al hacer clic fuera
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                cerrarModalConfirmacion();
+            }
+        });
+    }
+}
 
 // Función para mostrar mensajes en la página (no alert)
 function mostrarMensaje(mensaje, tipo = 'info') {
@@ -30,7 +79,9 @@ function mostrarMensaje(mensaje, tipo = 'info') {
 
     // Insertar al inicio del container
     const container = document.querySelector('.container');
-    container.insertBefore(mensajeDiv, container.firstChild);
+    if (container) {
+        container.insertBefore(mensajeDiv, container.firstChild);
+    }
 
     // Auto-eliminar después de 5 segundos
     setTimeout(() => {
@@ -54,16 +105,26 @@ async function guardarCliente(event) {
         return;
     }
 
+    // Generar timestamp para código único
+    const timestamp = new Date().getTime();
     const clienteData = {
-        codigo: generarCodigo(),
+        codigo: generarCodigo(timestamp),
         nombre,
         ruc,
         dv: dv.padStart(2, '0'),
         email,
-        telefono
+        telefono,
+        fecha_registro: new Date().toISOString().split('T')[0] // Agregar fecha actual
     };
 
     try {
+        // Deshabilitar botón mientras se procesa
+        const btnGuardar = document.querySelector('button[type="submit"]');
+        if (btnGuardar) {
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = 'Guardando...';
+        }
+
         if (clienteEditando) {
             // Actualizar cliente existente
             await apiAdapter.updateCliente(clienteEditando, clienteData);
@@ -86,12 +147,22 @@ async function guardarCliente(event) {
     } catch (error) {
         console.error('Error al guardar cliente:', error);
         mostrarMensaje('Error al guardar el cliente: ' + error.message, 'error');
+    } finally {
+        // Rehabilitar botón
+        const btnGuardar = document.querySelector('button[type="submit"]');
+        if (btnGuardar) {
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = 'Guardar Cliente';
+        }
     }
 }
 
-// Función para generar código automático
-function generarCodigo() {
-    return 'CLI-' + Date.now().toString().slice(-6);
+// Función para generar código automático mejorado
+function generarCodigo(timestamp = null) {
+    if (!timestamp) {
+        timestamp = new Date().getTime();
+    }
+    return 'CLI-' + timestamp.toString().slice(-6);
 }
 
 // Función para validar campos
@@ -122,6 +193,10 @@ async function cargarClientes() {
         console.log('Clientes recibidos:', clientes);
         
         const tbody = document.getElementById('clientesBody');
+        if (!tbody) {
+            console.error('No se encontró el tbody con id clientesBody');
+            return;
+        }
         
         tbody.innerHTML = '';
         
@@ -150,10 +225,10 @@ async function cargarClientes() {
                 <td>${cliente.telefono || '-'}</td>
                 <td>
                     <div class="acciones-cliente">
-                        <button class="btn-cliente btn-editar" onclick="editarCliente(${cliente.id})" title="Editar cliente">
+                        <button class="btn-cliente btn-editar" data-cliente-id="${cliente.id}" title="Editar cliente">
                             ✏️
                         </button>
-                        <button class="btn-cliente btn-eliminar" onclick="eliminarCliente(${cliente.id})" title="Eliminar cliente">
+                        <button class="btn-cliente btn-eliminar" data-cliente-id="${cliente.id}" title="Eliminar cliente">
                             🗑️
                         </button>
                     </div>
@@ -162,15 +237,41 @@ async function cargarClientes() {
             tbody.appendChild(tr);
         });
 
+        // Agregar event listeners a los botones después de crearlos
+        configurarBotonesAcciones();
+
     } catch (error) {
         console.error('Error al cargar clientes:', error);
         mostrarMensaje('Error al cargar los clientes: ' + error.message, 'error');
     }
 }
 
+// Configurar event listeners para botones de acción
+function configurarBotonesAcciones() {
+    // Botones de editar
+    const botonesEditar = document.querySelectorAll('.btn-editar[data-cliente-id]');
+    botonesEditar.forEach(boton => {
+        boton.addEventListener('click', function() {
+            const clienteId = parseInt(this.getAttribute('data-cliente-id'));
+            editarCliente(clienteId);
+        });
+    });
+
+    // Botones de eliminar
+    const botonesEliminar = document.querySelectorAll('.btn-eliminar[data-cliente-id]');
+    botonesEliminar.forEach(boton => {
+        boton.addEventListener('click', function() {
+            const clienteId = parseInt(this.getAttribute('data-cliente-id'));
+            eliminarCliente(clienteId);
+        });
+    });
+}
+
 // Función para editar cliente
 async function editarCliente(id) {
     try {
+        console.log('Editando cliente con ID:', id);
+        
         // Obtener datos del cliente
         const clientes = await apiAdapter.getClientes();
         const cliente = clientes.find(c => c.id === id);
@@ -190,6 +291,12 @@ async function editarCliente(id) {
         clienteEditando = id;
         mostrarMensaje('Editando cliente: ' + cliente.nombre, 'info');
 
+        // Scroll al formulario
+        const formulario = document.getElementById('clienteForm');
+        if (formulario) {
+            formulario.scrollIntoView({ behavior: 'smooth' });
+        }
+
     } catch (error) {
         console.error('Error al cargar cliente para editar:', error);
         mostrarMensaje('Error al cargar el cliente', 'error');
@@ -198,15 +305,52 @@ async function editarCliente(id) {
 
 // Función para eliminar cliente
 async function eliminarCliente(id) {
-    if (!confirm('¿Está seguro de que desea eliminar este cliente?')) {
+    try {
+        console.log('Solicitando eliminación del cliente con ID:', id);
+        
+        // Obtener datos del cliente
+        const clientes = await apiAdapter.getClientes();
+        const cliente = clientes.find(c => c.id === id);
+        
+        if (!cliente) {
+            mostrarMensaje('Cliente no encontrado', 'error');
+            return;
+        }
+
+        // Mostrar modal de confirmación
+        clienteEliminando = id;
+        const mensajeConfirmacion = document.getElementById('mensajeConfirmacion');
+        if (mensajeConfirmacion) {
+            mensajeConfirmacion.textContent = `¿Está seguro que desea eliminar al cliente "${cliente.nombre}"?`;
+        }
+
+        const modal = document.getElementById('modalConfirmacion');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+
+    } catch (error) {
+        console.error('Error al preparar eliminación:', error);
+        mostrarMensaje('Error al procesar la solicitud', 'error');
+    }
+}
+
+// Función para confirmar eliminación
+async function confirmarEliminarCliente() {
+    if (!clienteEliminando) {
         return;
     }
 
     try {
-        await apiAdapter.deleteCliente(id);
+        console.log('Eliminando cliente con ID:', clienteEliminando);
+        
+        await apiAdapter.deleteCliente(clienteEliminando);
         mostrarMensaje('Cliente eliminado exitosamente', 'exito');
+        
+        // Cerrar modal y recargar tabla
+        cerrarModalConfirmacion();
         await cargarClientes();
-
+        
     } catch (error) {
         console.error('Error al eliminar cliente:', error);
         mostrarMensaje('Error al eliminar el cliente: ' + error.message, 'error');
@@ -219,18 +363,20 @@ function cerrarModalConfirmacion() {
     if (modal) {
         modal.style.display = 'none';
     }
+    clienteEliminando = null;
 }
 
-// Función para volver al menú (backup)
+// Función para volver al menú
 function volverAlMenu() {
     window.location.href = 'menu.html';
 }
 
-// Event listeners adicionales
-window.addEventListener('beforeunload', function() {
-    // Limpiar variables si el usuario sale de la página
-    clienteEditando = null;
-});
+// Hacer funciones globales para compatibilidad
+window.editarCliente = editarCliente;
+window.eliminarCliente = eliminarCliente;
+window.guardarCliente = guardarCliente;
+window.cerrarModalConfirmacion = cerrarModalConfirmacion;
+window.volverAlMenu = volverAlMenu;
 
 // Estilos adicionales para los mensajes (si no están en CSS)
 const style = document.createElement('style');
