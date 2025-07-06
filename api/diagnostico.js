@@ -84,7 +84,7 @@ export default async function handler(req, res) {
         try {
             const { data: connectionTest, error: connectionError } = await supabase
                 .from('clientes')
-                .select('count(*)')
+                .select('id')
                 .limit(1);
 
             addTest(
