@@ -37,32 +37,69 @@ export default async function handler(req, res) {
             const { createClient } = await import('@supabase/supabase-js');
             const supabase = createClient(supabaseUrl, supabaseKey);
             
-            // Probar una consulta simple
+            // Probar una consulta simple (CORREGIDA)
             const { data, error } = await supabase
                 .from('clientes')
-                .select('count(*)')
+                .select('id')
                 .limit(1);
             
             if (error) {
                 return res.status(500).json({ 
                     error: 'Error de conexión con Supabase',
                     details: error.message,
-                    config
+                    config,
+                    suggestion: 'Verificar que la tabla clientes existe y tiene los permisos correctos'
                 });
+            }
+            
+            // Test de inserción básica
+            const testData = {
+                codigo: `TEST-${Date.now()}`,
+                nombre: "Test Cliente",
+                ruc: "123456789",
+                dv: "01",
+                email: "test@example.com",
+                telefono: "123456789",
+                activo: true
+            };
+
+            const { data: insertData, error: insertError } = await supabase
+                .from('clientes')
+                .insert([testData])
+                .select();
+
+            if (insertError) {
+                return res.status(500).json({ 
+                    error: 'Error al probar inserción',
+                    details: insertError.message,
+                    config,
+                    suggestion: 'Verificar permisos de escritura en la tabla clientes'
+                });
+            }
+
+            // Eliminar el registro de prueba
+            if (insertData && insertData[0]) {
+                await supabase
+                    .from('clientes')
+                    .delete()
+                    .eq('id', insertData[0].id);
             }
             
             return res.json({ 
                 success: true,
-                message: 'Configuración correcta',
+                message: 'Configuración correcta - Todo funciona',
                 config,
-                connection: 'OK'
+                connection: 'OK',
+                database: 'OK',
+                insertTest: 'OK'
             });
             
         } catch (connectionError) {
             return res.status(500).json({ 
                 error: 'Error al conectar con Supabase',
                 details: connectionError.message,
-                config
+                config,
+                suggestion: 'Verificar credenciales de Supabase'
             });
         }
 
@@ -70,7 +107,8 @@ export default async function handler(req, res) {
         console.error('Error en test-config:', error);
         return res.status(500).json({ 
             error: 'Error interno del servidor',
-            details: error.message
+            details: error.message,
+            timestamp: new Date().toISOString()
         });
     }
 } 
