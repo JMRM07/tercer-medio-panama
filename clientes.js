@@ -54,7 +54,10 @@ function configurarEventListeners() {
         btnCancelar.addEventListener('click', cerrarModalConfirmacion);
     }
     if (btnConfirmar) {
+        console.log('Configurando event listener para botón de confirmar eliminación');
         btnConfirmar.addEventListener('click', confirmarEliminarCliente);
+    } else {
+        console.warn('No se encontró el botón de confirmar eliminación');
     }
 
     // Cerrar modal al hacer clic fuera
@@ -282,9 +285,11 @@ function configurarBotonesAcciones() {
 
     // Botones de eliminar
     const botonesEliminar = document.querySelectorAll('.btn-eliminar[data-cliente-id]');
+    console.log('Configurando', botonesEliminar.length, 'botones de eliminar');
     botonesEliminar.forEach(boton => {
         boton.addEventListener('click', function() {
             const clienteId = parseInt(this.getAttribute('data-cliente-id'));
+            console.log('Botón de eliminar clickeado, ID:', clienteId);
             eliminarCliente(clienteId);
         });
     });
@@ -349,7 +354,10 @@ async function eliminarCliente(id) {
 
         const modal = document.getElementById('modalConfirmacion');
         if (modal) {
+            console.log('Mostrando modal de confirmación para cliente:', cliente.nombre);
             modal.style.display = 'block';
+        } else {
+            console.warn('No se encontró el modal de confirmación');
         }
 
     } catch (error) {
@@ -361,11 +369,19 @@ async function eliminarCliente(id) {
 // Función para confirmar eliminación
 async function confirmarEliminarCliente() {
     if (!clienteEliminando) {
+        console.log('No hay cliente seleccionado para eliminar');
         return;
     }
 
     try {
         console.log('Eliminando cliente con ID:', clienteEliminando);
+        
+        // Deshabilitar botón mientras se procesa
+        const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.textContent = 'Eliminando...';
+        }
         
         await apiAdapter.deleteCliente(clienteEliminando);
         mostrarMensaje('Cliente eliminado exitosamente', 'exito');
@@ -377,6 +393,13 @@ async function confirmarEliminarCliente() {
     } catch (error) {
         console.error('Error al eliminar cliente:', error);
         mostrarMensaje('Error al eliminar el cliente: ' + error.message, 'error');
+    } finally {
+        // Rehabilitar botón
+        const btnConfirmar = document.getElementById('btnConfirmarEliminar');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = 'Eliminar';
+        }
     }
 }
 
