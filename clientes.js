@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Variables globales
 let clienteEditando = null;
 let clienteEliminando = null;
+let guardandoCliente = false; // Prevenir doble submit
+let ultimoSubmit = 0; // Timestamp del último submit
 // apiAdapter ya está disponible globalmente desde api-adapter.js
 
 // Configurar todos los event listeners
@@ -25,6 +27,8 @@ function configurarEventListeners() {
     // Event listener para el formulario
     const form = document.getElementById('clienteForm');
     if (form) {
+        // Remover event listener anterior si existe
+        form.removeEventListener('submit', guardarCliente);
         form.addEventListener('submit', guardarCliente);
     }
 
@@ -95,6 +99,20 @@ function mostrarMensaje(mensaje, tipo = 'info') {
 async function guardarCliente(event) {
     event.preventDefault();
     
+    // Prevenir doble submit
+    if (guardandoCliente) {
+        console.log('Ya se está guardando un cliente, ignorando...');
+        return;
+    }
+    
+    // Prevenir submits muy rápidos (menos de 1 segundo)
+    const ahora = Date.now();
+    if (ahora - ultimoSubmit < 1000) {
+        console.log('Submit muy rápido, ignorando...');
+        return;
+    }
+    ultimoSubmit = ahora;
+    
     const nombre = document.getElementById('nombre').value.trim();
     const ruc = document.getElementById('ruc').value.trim();
     const dv = document.getElementById('dv').value.trim();
@@ -117,6 +135,9 @@ async function guardarCliente(event) {
     };
 
     try {
+        // Marcar que se está guardando
+        guardandoCliente = true;
+        
         // Deshabilitar botón mientras se procesa
         const btnGuardar = document.querySelector('button[type="submit"]');
         if (btnGuardar) {
@@ -147,6 +168,9 @@ async function guardarCliente(event) {
         console.error('Error al guardar cliente:', error);
         mostrarMensaje('Error al guardar el cliente: ' + error.message, 'error');
     } finally {
+        // Liberar el bloqueo de guardado
+        guardandoCliente = false;
+        
         // Rehabilitar botón
         const btnGuardar = document.querySelector('button[type="submit"]');
         if (btnGuardar) {
