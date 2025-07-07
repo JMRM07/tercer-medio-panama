@@ -150,13 +150,11 @@ export default async function handler(req, res) {
         // Test 5: Prueba de inserción (simulada)
         try {
             const testData = {
-                codigo: `TEST-${Date.now()}`,
                 nombre: "Cliente Test",
                 ruc: "123456789",
                 dv: "01",
                 email: "test@test.com",
-                telefono: "123456789",
-                activo: true
+                telefono: "123456789"
             };
 
             // Primero intentar insertar
@@ -205,7 +203,7 @@ export default async function handler(req, res) {
             if (structureError) {
                 const { data: simpleTest, error: simpleError } = await supabase
                     .from('clientes')
-                    .select('codigo, nombre, ruc, dv, email')
+                    .select('id, nombre, ruc, dv, email, telefono')
                     .limit(0);
 
                 addTest(
