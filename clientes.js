@@ -113,8 +113,7 @@ async function guardarCliente(event) {
         ruc,
         dv: dv.padStart(2, '0'),
         email,
-        telefono,
-        fecha_registro: new Date().toISOString().split('T')[0] // Agregar fecha actual
+        telefono
     };
 
     try {

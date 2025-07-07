@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
             case 'POST':
                 // Crear nuevo cliente
-                const { codigo, nombre, ruc, dv, email, telefono, fecha_registro } = req.body;
+                const { codigo, nombre, ruc, dv, email, telefono } = req.body;
                 
                 // Validaciones
                 if (!nombre || !ruc || !dv || !email) {
@@ -97,7 +97,6 @@ export default async function handler(req, res) {
                     dv: dv.padStart(2, '0'),
                     email: email.trim().toLowerCase(),
                     telefono: telefono ? telefono.trim() : null,
-                    fecha_registro: fecha_registro || new Date().toISOString().split('T')[0],
                     activo: true
                 };
 
