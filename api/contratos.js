@@ -28,13 +28,12 @@ export default async function handler(req, res) {
                             clientes (
                                 id,
                                 nombre,
-                                codigo,
                                 ruc,
-                                dv
+                                dv,
+                                email
                             )
                         `)
-                        .eq('activo', true)
-                        .order('fecha_inicio', { ascending: false });
+                        .order('created_at', { ascending: false });
                     
                     if (error) throw error;
                     return res.json(contratos);
@@ -48,7 +47,6 @@ export default async function handler(req, res) {
                         clientes (
                             id,
                             nombre,
-                            codigo,
                             ruc,
                             dv,
                             email,
@@ -56,7 +54,6 @@ export default async function handler(req, res) {
                         )
                     `)
                     .eq('id', req.query.id)
-                    .eq('activo', true)
                     .single();
                 
                 if (contratoError && contratoError.code !== 'PGRST116') throw contratoError;
@@ -80,7 +77,8 @@ export default async function handler(req, res) {
                 }
 
                 // Calcular valores
-                const subtotal = parseFloat(monto);
+                const montoNumerico = parseFloat(monto);
+                const subtotal = montoNumerico;
                 const itbms = subtotal * 0.07; // 7% ITBMS
                 const total = subtotal + itbms;
 
@@ -88,9 +86,9 @@ export default async function handler(req, res) {
                     .from('contratos')
                     .insert([{
                         numero,
-                        cliente_id,
+                        cliente_id: parseInt(cliente_id),
                         descripcion,
-                        monto,
+                        monto: montoNumerico,
                         subtotal,
                         itbms,
                         total,
@@ -98,8 +96,7 @@ export default async function handler(req, res) {
                         fecha_fin,
                         tipo_contrato: tipo_contrato || 'Servicios',
                         observaciones,
-                        estado: 'Activo',
-                        fecha_creacion: new Date().toISOString()
+                        estado: 'Activo'
                     }])
                     .select();
                 
@@ -155,7 +152,7 @@ export default async function handler(req, res) {
 
                 const { error: deleteError } = await supabase
                     .from('contratos')
-                    .update({ activo: false, estado: 'Cancelado' })
+                    .delete()
                     .eq('id', deleteId);
                 
                 if (deleteError) throw deleteError;
