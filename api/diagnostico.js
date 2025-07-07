@@ -150,6 +150,7 @@ export default async function handler(req, res) {
         // Test 5: Prueba de inserción (simulada)
         try {
             const testData = {
+                codigo: `TEST-${Date.now()}`,
                 nombre: "Cliente Test",
                 ruc: "123456789",
                 dv: "01",
